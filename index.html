@@ -57,6 +57,30 @@ body {
 </table>
 
 <script>
+	let currentUrl = window.location.href;
+	var indexAfterDotCom = currentUrl.indexOf('.com/') + 5;
+	var urlAfterDotCom = currentUrl.substring(indexAfterDotCom);
+	var searchParams = new URLSearchParams(urlAfterDotCom);
+
+	var token = searchParams.get("token");
+	console.log(token);
+
+        let xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) { // Check if request is complete
+                    if (xhr.status === 200) { // Check if request was successful
+			let rsp = xhr.responseText;
+			console.log(rsp);
+                    } else {
+                        console.log('Request failed');
+                    }
+                }
+            };
+        xhr.open('GET', "/data?token=" + token, true); // Open a GET request to a URL
+        xhr.setRequestHeader('Content-Type', 'application/json'); // Example header
+        xhr.send(); // Send the request
+
+
     // Get a reference to the table's tbody element
     var tableBody = document.querySelector("#myTable tbody");
 

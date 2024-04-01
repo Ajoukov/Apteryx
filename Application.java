@@ -111,27 +111,25 @@ class Application {
 
 	private static void handleRequest(HttpExchange exchange) throws IOException {
 		String URI = getURI(exchange);
-		String query = getQuery(exchange);
 		Headers hs = exchange.getRequestHeaders();
+
+		for (String s : validFiles) {
+			if (URI.equals("/file/" + s)) {
+				getFile(exchange);
+				return;
+			}
+		}
 
 		if (URI.equals("/login")) {
 			sendToLogin(exchange);
 			return;
 		}
-		if (URI.equals("/file/crypt.js")) {
-			getFile(exchange);
-			return;
-		}
-		if (URI.indexOf("/file/sendrequest.js") == 0) {
-			getFile(exchange);
+		if (URI.indexOf("/login/creds") == 0) {
+			verifyCreds(exchange);
 			return;
 		}
 		if (URI.indexOf("/login/creds/new") == 0) {
 			createNewCreds(exchange);
-			return;
-		}
-		if (URI.indexOf("/login/creds") == 0) {
-			verifyCreds(exchange);
 			return;
 		}
 		if (URI.indexOf("/login/new") == 0) {
@@ -139,26 +137,25 @@ class Application {
 			return;
 		}
 
-		String token = "-1";
-
-		Map<String, List<String>> params = splitQuery(query);
-		List<String> q = params.get("token");
-
-		if (q != null) {
-			token = q.get(0);
-		}
-
-		Session session = sessions.get(Integer.parseInt(token));
-		if (session == null) {
+		int token = getToken(exchange);
+		boolean validSession = validSession(token);
+		if (!validSession)
 			sendToLogin(exchange);
+
+		if (URI.indexOf("/data") == 0) {
+			sendData(exchange);
 			return;
 		}
-		if (session.timeElapsed() > 10000000) {
-			sendToLogin(exchange);
+		if (URI.equals("/")) {
+			String rsp = readFile("index.html");
+			Session session = sessions.get(token);
+			String username = session.getUsername();
+			addHeader(exchange, "username", username);
+			sendResponse(exchange, rsp);
 			return;
 		}
-		sendResponse(exchange, readFile("index.html"));
-		exchange.close();
+		returnError(exchange);
+		return;
 	}
 
 	private static void log(int i) {
@@ -244,6 +241,42 @@ class Application {
 		return rsp;
 	}
 
+	private static int getToken(HttpExchange exchange) throws IOException {
+		String query = getQuery(exchange);
+		String token = "-1";
+		Map<String, List<String>> params = splitQuery(query);
+		List<String> q = params.get("token");
+		if (q != null) {
+			token = q.get(0);
+		}
+		return Integer.parseInt(token);
+	}
+
+	private static boolean validSession(int token) {
+		return validSession(token + "");
+	}
+	private static boolean validSession(String token) {
+		Session session = sessions.get(Integer.parseInt(token));
+		if (session == null) {
+			return false;
+		}
+		if (session.timeElapsed() > 10000000) {
+			return false;
+		}
+		return true;
+	}
+
+	private static void sendData(HttpExchange exchange) throws IOException {
+		int token = getToken(exchange);
+		Session session = sessions.get(token);
+		if (session == null)
+			returnError(exchange);
+
+		String rsp = "some data";
+		addHeader(exchange, "username", session.getUsername());
+		sendResponse(exchange, rsp);
+	}
+
 	private static void sendToLogin(HttpExchange exchange) throws IOException {
 		String rsp = readFile("login.html");
 		sendResponse(exchange, rsp);
@@ -283,7 +316,9 @@ class Application {
 			String s_username = s.substring(2, secondCol);
 			String s_password = s.substring(secondCol + 1);
 			if (username.equals(s_username) && password.equals(s_password)) {
-				addHeader(exchange, "token", createNewSession() + "");
+				int token = createNewSession();
+				addHeader(exchange, "token", token + "");
+				addHeader(exchange, "username", username);
 				sendResponse(exchange, "");
 			}
 		}
