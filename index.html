@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Table Example</title>
+<style>
+#myTable {
+	margin-top: 100px;
+}
+.header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	background-color: #333;
+	padding: 10px 20px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	z-index: 1000; /* to ensure it stays above other content */
+}
+	.user-name {
+	float: right;
+	color: #fff;
+}
+.title {
+	float: left;
+	font-weight: bold;
+	color: #fff;
+}
+body {
+	font-family: neue-haas-grotesk-text,sans-serif;
+	height:3000px;
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+	<div class="title">Apteryx</div>
+	<div class="user-name"></div>
+</header>
+
+<table id="myTable">
+    <thead>
+        <tr>
+            <th>Column 1</th>
+            <th>Column 2</th>
+            <th>Column 3</th>
+            <!-- You can add more columns here as needed -->
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Table body will be filled with values using JavaScript -->
+    </tbody>
+</table>
+
+<script>
+    // Get a reference to the table's tbody element
+    var tableBody = document.querySelector("#myTable tbody");
+
+    // Sample data
+    var data = [
+        ["Value 1A", "Value 1B", "Value 1C"],
+        ["Value 2A", "Value 2B", "Value 2C"],
+        ["Value 3A", "Value 3B", "Value 3C"],
+        // Add more rows of data as needed
+    ];
+
+    // Loop through the data and create table rows and cells
+    data.forEach(function(rowData) {
+        var row = document.createElement("tr");
+
+        rowData.forEach(function(cellData) {
+            var cell = document.createElement("td");
+            cell.textContent = cellData;
+            row.appendChild(cell);
+        });
+
+        tableBody.appendChild(row);
+    });
+</script>
+
+</body>
+</html>
