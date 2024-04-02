@@ -38,12 +38,10 @@ class Application {
 	static String[] validFiles = {"html/login.html", "html/crypt.js", "html/sendrequest.js"};
 	static String[] ignoreURIs = {"favicon.ico"};
 	static HashMap<Integer, Session> sessions = new HashMap<>();
-//	static HashList<Integer> tokens = new HashList<Integer>();
 
 	private static boolean checkCredentials(String user, String pwd) {
 		return user.equals("admin") && pwd.equals("admin");
 	}
-
 	private static String getURI(HttpExchange e) {
 		return e.getRequestURI().getPath();
 	}
@@ -104,14 +102,6 @@ class Application {
         }
     }
 
-    private static String decode(final String encoded) {
-        try {
-            return encoded == null ? null : URLDecoder.decode(encoded, "UTF-8");
-        } catch (final UnsupportedEncodingException e) {
-            throw new RuntimeException("UTF-8 is a required encoding", e);
-        }
-    }
-
 	private static void handleRequest(HttpExchange exchange) throws IOException {
 		String URI = getURI(exchange);
 		Headers hs = exchange.getRequestHeaders();
@@ -155,8 +145,8 @@ class Application {
 
 		log("Valid session");
 
-		if (URI.equals("/data")) {
-			sendData(exchange);
+		if (URI.equals("/userdata")) {
+			sendUserData(exchange);
 			return;
 		}
 		if (URI.equals("/")) {
@@ -167,7 +157,7 @@ class Application {
 			sendResponse(exchange, rsp);
 			return;
 		}
-		returnError(exchange);
+		sendError(exchange);
 		return;
 	}
 
@@ -194,41 +184,13 @@ class Application {
 		} catch (IOException e) {
 		}
 	}
-	private static boolean verifyRequest(HttpExchange exchange) {
-		Headers params = exchange.getRequestHeaders();
-		String path = exchange.getHttpContext().getPath();
-		List<String> authHeaders = params.get("Authorization");
-		String authHeader = "";
-		if (authHeaders != null) {
-			authHeader = authHeaders.get(0);
-		}
-		if ("GET".equals(exchange.getRequestMethod()))
-			return true;
-		if ("PUT".equals(exchange.getRequestMethod())) {
-			log(path);
-			if (path.equals("/login/new"))
-				return true;
-			if (authHeader != null && !authHeader.equals("")) {
-  //              		String credentials = new String(Base64.getDecoder().decode(encodedCredentials));
-                		int colIndex = authHeader.indexOf(":");
-				String username = authHeader.substring(0, colIndex);
-                		String password = authHeader.substring(colIndex + 1);
 
-                		if (checkCredentials(username, password)) {
-                			return true;
-                		}
-        		}
-			return false;
-		}
-		return false;
-	}
-
-	private static void returnError(int err, HttpExchange exchange) throws IOException {
-		log("ReturnError: " + err);
+	private static void sendError(int err, HttpExchange exchange) throws IOException {
+		log("sendError: " + err);
 		exchange.sendResponseHeaders(err, -1);
 	}
-	private static void returnError(HttpExchange exchange) throws IOException {
-		log("ReturnError: 400");
+	private static void sendError(HttpExchange exchange) throws IOException {
+		log("sendError: 400");
 		exchange.sendResponseHeaders(400, -1);
 	}
 
@@ -245,7 +207,7 @@ class Application {
 			}
 		}
 		if (!valid) {
-			returnError(exchange);
+			sendError(exchange);
 			return;
 		}
 		String rsp = readFile(fname);
@@ -305,14 +267,19 @@ class Application {
 		return true;
 	}
 
-	private static void sendData(HttpExchange exchange) throws IOException {
+	private static void sendUserData(HttpExchange exchange) throws IOException {
 		int token = getToken(exchange);
 		Session session = sessions.get(token);
 		if (session == null)
-			returnError(exchange);
+			sendError(exchange);
 
-		String rsp = "some data";
+		String rsp = ""; // some data
 		addHeader(exchange, "username", session.getUsername());
+		sendResponse(exchange, rsp);
+	}
+	private static void sendData(HttpExchange exchange) throws IOException {
+		ApteryxProcessor ap = new ApteryxProcessor();
+		String rsp = ap.getResults();
 		sendResponse(exchange, rsp);
 	}
 
@@ -368,7 +335,7 @@ class Application {
 				sendResponse(exchange, "");
 			}
 		}
-		returnError(exchange);
+		sendError(exchange);
 	}
 
 	private static void createNewCreds(HttpExchange exchange) throws IOException {
@@ -378,7 +345,7 @@ class Application {
 
 		int colIndex = body.indexOf(":");
 		if (colIndex == -1) {
-			returnError(exchange);
+			sendError(exchange);
 			return;
 		}
 		String username = body.substring(0, colIndex);
@@ -386,7 +353,7 @@ class Application {
 
 		int count = body.length() - body.replace("\n", "").length();
 		if (count > 0) {
-			returnError(exchange);
+			sendError(exchange);
 			return;
 		}
 		File f = new File("data/creds");
@@ -417,7 +384,7 @@ class Application {
 		}
 		Session session = new Session(token, username);
 		if (session == null) {
-			log("null session");
+			log("Null session");
 			return -1;
 		}
 		log("CREATED NEW TOKEN:" + token);
