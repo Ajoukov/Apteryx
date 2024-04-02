@@ -74,33 +74,39 @@ class Application {
 	}
 
 
-    public static Map<String, List<String>> splitQuery(String query) {
-        if (query == null || "".equals(query)) {
-            return Collections.emptyMap();
-        }
+	private static String decode(final String encoded) {
+		try {
+			return encoded == null ? null : URLDecoder.decode(encoded, "UTF-8");
+		} catch (final UnsupportedEncodingException e) {
+			throw new RuntimeException("UTF-8 is a required encoding", e);
+		}
+	}
 
-        return Pattern.compile("&").splitAsStream(query)
-            .map(s -> Arrays.copyOf(s.split("="), 2))
-            .collect(groupingBy(s -> decode(s[0]), mapping(s -> decode(s[1]), toList())));
 
-    }
+	public static Map<String, List<String>> splitQuery(String query) {
+		if (query == null || "".equals(query)) {
+			return Collections.emptyMap();
+		}
 
-    public static String sha1(String input) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-1");
-            byte[] hashBytes = digest.digest(input.getBytes());
+		return Pattern.compile("&").splitAsStream(query)
+		.map(s -> Arrays.copyOf(s.split("="), 2))
+		.collect(groupingBy(s -> decode(s[0]), mapping(s -> decode(s[1]), toList())));
+	}
 
-            // Convert byte array to hexadecimal string
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashBytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
+	public static String sha1(String input) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-1");
+			byte[] hashBytes = digest.digest(input.getBytes());
+			StringBuilder sb = new StringBuilder();
+			for (byte b : hashBytes) {
+				sb.append(String.format("%02x", b));
+			}
+			return sb.toString();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 	private static void handleRequest(HttpExchange exchange) throws IOException {
 		String URI = getURI(exchange);
