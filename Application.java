@@ -350,7 +350,7 @@ class Application {
 	private static void verifyCreds(HttpExchange exchange) throws IOException {
 		Headers hs = exchange.getResponseHeaders();
 		String body = getContent(exchange);
-		String all_creds = readFile("creds");
+		String all_creds = readFile("data/creds");
 
 		int colIndex = body.indexOf(":");
 		String username = body.substring(0, colIndex);
