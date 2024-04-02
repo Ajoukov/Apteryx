@@ -389,7 +389,7 @@ class Application {
 			returnError(exchange);
 			return;
 		}
-		File f = new File("creds");
+		File f = new File("data/creds");
 		f.createNewFile();
 		FileWriter fr = new FileWriter(f, true);
 		fr.write("0:" + username + ":" + pass_enc + "\n");
