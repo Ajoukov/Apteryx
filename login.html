@@ -94,7 +94,8 @@
                 if (xhr.readyState === XMLHttpRequest.DONE) { // Check if request is complete
                     if (xhr.status === 200) { // Check if request was successful
 			let token = xhr.getResponseHeader("token");
-			sendRequest("/", token);
+			setToken(token);
+			sendRequest("/");
                     } else {
                         console.log('Request failed');
 		            document.getElementById('error-message').innerText = "Bad username or password.";

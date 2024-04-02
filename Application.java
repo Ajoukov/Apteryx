@@ -36,6 +36,7 @@ import java.util.*;
 class Application {
 
 	static String[] validFiles = {"login.html", "crypt.js", "sendrequest.js"};
+	static String[] ignoreURIs = {"favicon.ico"};
 	static HashMap<Integer, Session> sessions = new HashMap<>();
 //	static HashList<Integer> tokens = new HashList<Integer>();
 
@@ -51,6 +52,8 @@ class Application {
 	}
 
 	public static void main(String[] args) throws IOException {
+
+		clearLog();
 
 		int serverPort = 80;
 		HttpServer server = HttpServer.create(new InetSocketAddress(serverPort), 0);
@@ -119,30 +122,40 @@ class Application {
 				return;
 			}
 		}
+		for (String s : ignoreURIs) {
+			if (URI.equals("/" + s)) {
+				ignoreExchange(exchange);
+				return;
+			}
+		}
 
 		if (URI.equals("/login")) {
 			sendToLogin(exchange);
 			return;
 		}
-		if (URI.indexOf("/login/creds") == 0) {
+		if (URI.equals("/login/creds")) {
 			verifyCreds(exchange);
 			return;
 		}
-		if (URI.indexOf("/login/creds/new") == 0) {
+		if (URI.equals("/login/creds/new")) {
 			createNewCreds(exchange);
 			return;
 		}
-		if (URI.indexOf("/login/new") == 0) {
+		if (URI.equals("/login/new")) {
 			sendToNewLogin(exchange);
 			return;
 		}
+
+		log("Checking session");
 
 		int token = getToken(exchange);
 		boolean validSession = validSession(token);
 		if (!validSession)
 			sendToLogin(exchange);
 
-		if (URI.indexOf("/data") == 0) {
+		log("Valid session");
+
+		if (URI.equals("/data")) {
 			sendData(exchange);
 			return;
 		}
@@ -167,6 +180,16 @@ class Application {
 			f.createNewFile();
 			FileWriter fr = new FileWriter(f, true);
 			fr.write(s + "\n");
+			fr.close();
+		} catch (IOException e) {
+		}
+	}
+	private static void clearLog() {
+		try {
+			File f = new File("log");
+			f.createNewFile();
+			FileWriter fr = new FileWriter(f);
+			fr.write("");
 			fr.close();
 		} catch (IOException e) {
 		}
@@ -201,9 +224,11 @@ class Application {
 	}
 
 	private static void returnError(int err, HttpExchange exchange) throws IOException {
+		log("ReturnError: " + err);
 		exchange.sendResponseHeaders(err, -1);
 	}
 	private static void returnError(HttpExchange exchange) throws IOException {
+		log("ReturnError: 400");
 		exchange.sendResponseHeaders(400, -1);
 	}
 
@@ -242,13 +267,26 @@ class Application {
 	}
 
 	private static int getToken(HttpExchange exchange) throws IOException {
-		String query = getQuery(exchange);
+		Headers hs = exchange.getRequestHeaders();
 		String token = "-1";
-		Map<String, List<String>> params = splitQuery(query);
-		List<String> q = params.get("token");
-		if (q != null) {
-			token = q.get(0);
+		List<String> cookies = hs.get("Cookie");
+		if (cookies != null && cookies.size() > 0) {
+			String cookie = cookies.get(0);
+			int tokenLoc = cookie.indexOf("token=") + 6;
+			if (tokenLoc != -1 && cookie.length() > tokenLoc) {
+				log("found token");
+				int tokenEndLoc = cookie.indexOf(";", tokenLoc);
+				log("tokenEndLoc");
+				if (tokenEndLoc != -1) {
+					log("found token end");
+					token = cookie.substring(tokenLoc, tokenEndLoc);
+				} else {
+					log("didn't find token end");
+					token = cookie.substring(tokenLoc);
+				}
+			}
 		}
+		log("TOKEN:" + token);
 		return Integer.parseInt(token);
 	}
 
@@ -256,6 +294,7 @@ class Application {
 		return validSession(token + "");
 	}
 	private static boolean validSession(String token) {
+		log("validSession: IN");
 		Session session = sessions.get(Integer.parseInt(token));
 		if (session == null) {
 			return false;
@@ -278,11 +317,18 @@ class Application {
 	}
 
 	private static void sendToLogin(HttpExchange exchange) throws IOException {
+		log("Send to login page");
 		String rsp = readFile("login.html");
 		sendResponse(exchange, rsp);
 		return;
 	}
+	private static void ignoreExchange(HttpExchange exchange) throws IOException {
+		log("Ignored");
+		sendResponse(exchange, "");
+		return;
+	}
 	private static void sendToNewLogin(HttpExchange exchange) throws IOException {
+		log("Send to new user page");
 		String rsp = readFile("login-newuser.html");
 		sendResponse(exchange, rsp);
 		return;
@@ -316,7 +362,7 @@ class Application {
 			String s_username = s.substring(2, secondCol);
 			String s_password = s.substring(secondCol + 1);
 			if (username.equals(s_username) && password.equals(s_password)) {
-				int token = createNewSession();
+				int token = createNewSession(username);
 				addHeader(exchange, "token", token + "");
 				addHeader(exchange, "username", username);
 				sendResponse(exchange, "");
@@ -326,8 +372,17 @@ class Application {
 	}
 
 	private static void createNewCreds(HttpExchange exchange) throws IOException {
+		log("CREATE_NEW_CREDS: IN");
 		Headers hs = exchange.getResponseHeaders();
 		String body = getContent(exchange);
+
+		int colIndex = body.indexOf(":");
+		if (colIndex == -1) {
+			returnError(exchange);
+			return;
+		}
+		String username = body.substring(0, colIndex);
+		String pass_enc = body.substring(colIndex + 1);
 
 		int count = body.length() - body.replace("\n", "").length();
 		if (count > 0) {
@@ -337,10 +392,10 @@ class Application {
 		File f = new File("creds");
 		f.createNewFile();
 		FileWriter fr = new FileWriter(f, true);
-		fr.write("0:" + body + "\n");
+		fr.write("0:" + username + ":" + pass_enc + "\n");
 		fr.close();
 
-		int token = createNewSession();
+		int token = createNewSession(username);
 		addHeader(exchange, "token", token + "");
 		sendResponse(exchange, "");
 		return;
@@ -351,7 +406,7 @@ class Application {
 		h.add(key, value);
 	}
 
-	private static int createNewSession() {
+	private static int createNewSession(String username) {
 		int token = -1;
 		while (true) {
 			int new_token = (int) (Math.random() * Math.pow(2, 20));
@@ -360,11 +415,12 @@ class Application {
 				break;
 			}
 		}
-		Session session = new Session(token);
+		Session session = new Session(token, username);
 		if (session == null) {
 			log("null session");
 			return -1;
 		}
+		log("CREATED NEW TOKEN:" + token);
 		sessions.put(token, session);
 
 		return token;
