@@ -35,7 +35,7 @@ import java.util.*;
 
 class Application {
 
-	static String[] validFiles = {"login.html", "crypt.js", "sendrequest.js"};
+	static String[] validFiles = {"html/login.html", "html/crypt.js", "html/sendrequest.js"};
 	static String[] ignoreURIs = {"favicon.ico"};
 	static HashMap<Integer, Session> sessions = new HashMap<>();
 //	static HashList<Integer> tokens = new HashList<Integer>();
@@ -160,7 +160,7 @@ class Application {
 			return;
 		}
 		if (URI.equals("/")) {
-			String rsp = readFile("index.html");
+			String rsp = readFile("html/index.html");
 			Session session = sessions.get(token);
 			String username = session.getUsername();
 			addHeader(exchange, "username", username);
@@ -318,7 +318,7 @@ class Application {
 
 	private static void sendToLogin(HttpExchange exchange) throws IOException {
 		log("Send to login page");
-		String rsp = readFile("login.html");
+		String rsp = readFile("html/login.html");
 		sendResponse(exchange, rsp);
 		return;
 	}
@@ -329,7 +329,7 @@ class Application {
 	}
 	private static void sendToNewLogin(HttpExchange exchange) throws IOException {
 		log("Send to new user page");
-		String rsp = readFile("login-newuser.html");
+		String rsp = readFile("html/login-newuser.html");
 		sendResponse(exchange, rsp);
 		return;
 	}
