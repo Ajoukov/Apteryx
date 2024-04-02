@@ -39,7 +39,7 @@ body {
 
 <header class="header">
 	<div class="title">Apteryx</div>
-	<div class="user-name"></div>
+	<div id="user-name"></div>
 </header>
 
 <table id="myTable">
@@ -61,6 +61,7 @@ body {
 	var indexAfterDotCom = currentUrl.indexOf('.com/') + 5;
 	var urlAfterDotCom = currentUrl.substring(indexAfterDotCom);
 	var searchParams = new URLSearchParams(urlAfterDotCom);
+	var username = "";
 
 	var token = searchParams.get("token");
 	console.log(token);
@@ -70,6 +71,8 @@ body {
                 if (xhr.readyState === XMLHttpRequest.DONE) { // Check if request is complete
                     if (xhr.status === 200) { // Check if request was successful
 			let rsp = xhr.responseText;
+			username = xhr.getResponseHeader("username");
+			document.getElementById('user-name').innerText = username;
 			console.log(rsp);
                     } else {
                         console.log('Request failed');
