@@ -20,15 +20,19 @@
 	justify-content: space-between;
 	z-index: 1000; /* to ensure it stays above other content */
 }
-#user-name {
-	float: right;
-	color: #fff;
-	margin-right: 40px;
-}
-.title {
-	float: left;
+#title {
 	font-weight: bold;
 	color: #fff;
+}
+#user-name {
+	margin-left:auto;
+	color: #fff;
+	margin-right: 20px;
+}
+#logout {
+	margin-right: 20px;
+	background-color: white;
+	cursor: pointer;
 }
 body {
 	font-family: neue-haas-grotesk-text,sans-serif;
@@ -37,10 +41,14 @@ body {
 </style>
 </head>
 <body>
+<script src="file/html/crypt.js"></script>
+<script src="file/html/sendrequest.js"></script>
+
 
 <header class="header">
-	<div class="title">Apteryx</div>
+	<div id="title">Apteryx</div>
 	<div id="user-name"></div>
+	<button id="logout" onclick="logout()">Log out<button>
 </header>
 
 <table id="myTable">

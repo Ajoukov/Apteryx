@@ -79,6 +79,11 @@ class Application {
 			}
 		}
 
+		if (URI.equals("/logout")) {
+			CredentialManager.logout(exchange);
+			sendResponse(exchange, "");
+			return;
+		}
 		if (URI.equals("/login")) {
 			sendToLogin(exchange);
 			return;

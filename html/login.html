@@ -79,8 +79,6 @@
         event.preventDefault();
         var username = document.getElementById('username').value;
         var password = document.getElementById('password').value;
-        // Here you can perform validation and authentication
-        // For simplicity, let's just display an error if username or password is empty
         if (!username || !password) {
             document.getElementById('error-message').innerText = "Username and password are required.";
 		return;
@@ -88,28 +86,17 @@
 
 	let msg = username + ":" + sha1(password);
 
-	let xhr = new XMLHttpRequest();
 
-	xhr.onreadystatechange = function () {
-                if (xhr.readyState === XMLHttpRequest.DONE) { // Check if request is complete
-                    if (xhr.status === 200) { // Check if request was successful
-			let token = xhr.getResponseHeader("token");
-			setToken(token);
-			sendRequest("/");
-                    } else {
-                        console.log('Request failed');
-		            document.getElementById('error-message').innerText = "Bad username or password.";
-
-                    }
-                }
-            };
-        xhr.open('PUT', "/login/creds", true); // Open a GET request to a URL
-        xhr.setRequestHeader('Content-Type', 'application/json'); // Example header
-	console.log(msg);
-        xhr.send(msg); // Send the request
-
+	let callback = function(xhr) {
+		let token = xhr.getResponseHeader("token");
+		setToken(token);
+		window.location.href = "/";
+	}
+	let ecallback = function(xhr) {
+		document.getElementById('error-message').innerText = "Bad username or password.";
+	}
+	sendRequest("PUT", "/login/creds", msg, callback, ecallback);
     });
-
 </script>
 
 </body>

@@ -58,6 +58,16 @@ public class CredentialManager {
                 return true;
         }
 
+        public static int logout(HttpExchange exchange) throws IOException {
+		int token = getToken(exchange);
+		if (token == -1) {
+			Log.log("ALREADY LOGGED OUT");
+			return -1;
+		}
+		sessions.remove(token);
+		return 0;
+	}
+
         public static int verifyCreds(HttpExchange exchange) throws IOException {
                 Headers hs = exchange.getResponseHeaders();
                 String body = Application.getContent(exchange);

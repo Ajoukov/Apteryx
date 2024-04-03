@@ -78,36 +78,22 @@
         event.preventDefault();
         var username = document.getElementById('username').value;
         var password = document.getElementById('password').value;
-        // Here you can perform validation and registration
-        // For simplicity, let's just display an error if any field is empty
         if (!username || !password) {
             document.getElementById('error-message').innerText = "All fields are required.";
         } else {
-        let msg = username + ":" + sha1(password);
-
-        let xhr = new XMLHttpRequest();
-
-        xhr.onreadystatechange = function () {
-                if (xhr.readyState === XMLHttpRequest.DONE) { // Check if request is complete
-                    if (xhr.status === 200) { // Check if request was successful
+	        let msg = username + ":" + sha1(password);
+		let callback = function(xhr) {
 			let token = xhr.getResponseHeader("token");
 			setToken(token);
-			sendRequest("/");
-                    } else {
-                        console.log('Request failed');
-                    }
-                }
-            };
-        xhr.open('PUT', "/login/creds/new", true); // Open a GET request to a URL
-        xhr.setRequestHeader('Content-Type', 'application/json'); // Example header
-        xhr.send(msg); // Send the request
-
-            document.getElementById('error-message').innerText = "";
-            document.getElementById('error-message').innerText = "";
-            document.getElementById('username').value = "";
-            document.getElementById('password').value = "";
+			window.location.href = "/";
+		};
+		let ecallback = function(xhr) {
+	            document.getElementById('error-message').innerText = "An error has occurred";
+		};
+		sendRequest("PUT", "/login/creds/new", msg, callback, ecallback);
         }
     });
+
 </script>
 
 </body>
