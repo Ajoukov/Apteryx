@@ -22,6 +22,8 @@ class Application {
 
 		Log.clearLog();
 
+		Log.log("Starting");
+
 		int serverPort = 80;
 		HttpServer server = HttpServer.create(new InetSocketAddress(serverPort), 0);
 		server.createContext("/", (exchange -> {
